@@ -48,9 +48,22 @@ pc.defineParameter("osImage", "Select OS image for clients",
                    portal.ParameterType.IMAGE,
                    imageList[0], imageList)
 
+pc.defineParameter("ntype",  "Select physical node type for nodes",
+                   portal.ParameterType.NODETYPE, "",
+                   longDescription="Pick a single physical node type " +
+                   "for client nodes " +
+                   "instead of letting the resource mapper choose for you.")
+
 pc.defineParameter("osServerImage", "Select OS image for server",
                    portal.ParameterType.IMAGE,
                    imageList2[0], imageList2)
+
+# Optional physical type for server node.
+pc.defineParameter("ntypeServer",  "Select physical node type for server",
+                   portal.ParameterType.NODETYPE, "",
+                   longDescription="Pick a single physical node type " +
+                   "for server node " +
+                   "instead of letting the resource mapper choose for you.")
 
 pc.defineParameter("nfsSize", "Size of NFS Storage",
                    portal.ParameterType.STRING, "200GB",
@@ -68,6 +81,9 @@ nfsLan.link_multiplexing = True
 # The NFS server.
 nfsServer = request.RawPC(nfsServerName)
 nfsServer.disk_image = params.osServerImage
+if params.ntypeServer != "":
+    nfsServer.hardware_type = params.ntypeServer
+    pass
 # Attach server to lan.
 nfsLan.addInterface(nfsServer.addInterface())
 # Storage file system goes into a local (ephemeral) blockstore.
@@ -80,6 +96,9 @@ nfsServer.addService(pg.Execute(shell="sh", command="sudo /bin/bash /local/repos
 for i in range(1, params.clientCount+1):
     node = request.RawPC("node%d" % i)
     node.disk_image = params.osImage
+    if params.ntype != "":
+        node.hardware_type = params.ntype
+        pass
     nfsLan.addInterface(node.addInterface())
     # Initialization script for the clients
     node.addService(pg.Execute(shell="sh", command="sudo /bin/bash /local/repository/nfs-client.sh"))
